@@ -167,7 +167,8 @@ def evaluate(expression: str, /) -> int | None:
         if not _process_char(test_char, scope_stacks):
             return None
 
-    if len(scope_stacks) != 1:
+    expected_stacks: t.Final = 1
+    if len(scope_stacks) != expected_stacks:
         # Scopes should have collapsed. Mismatched parenthesis. e.g: ((1+2).
         return None
 
@@ -425,10 +426,14 @@ if __name__ == "__main__":
         TestCase("Unsigned parenthesis", None, "-(1*2)"),
         TestCase("Unsigned number in parenthesis", None, "(-1)"),
         TestCase(
-            "Unsigned number in parenthesis pre-operator", None, "(-1*2)",
+            "Unsigned number in parenthesis pre-operator",
+            None,
+            "(-1*2)",
         ),
         TestCase(
-            "Unsigned number in parenthesis post-operator", None, "(1*-2)",
+            "Unsigned number in parenthesis post-operator",
+            None,
+            "(1*-2)",
         ),
         # isnumeric() would allow this, we should not.
         TestCase("Global numeric characters", None, "五-五"),
