@@ -374,9 +374,9 @@ if __name__ == "__main__":
         # ------------- Nesting -----------------------------------------
         TestCase("Simple nested operation", 4, "(1+3)"),
         TestCase("Operator before parenthesis", 8, "2 * (1+3)"),
+        TestCase("Operator after parentheses", 4, "(1+1)*2"),
         TestCase("Two distinct scopes", 8, "(1+1) * (1+3)"),
         TestCase("Deeply nested scopes", 8, "(1+1) * (1+(1+2))"),
-        TestCase("Start with parentheses", 4, "(1+1)*2"),
         TestCase("Root redundant matching parenthesis", 1, "(1)"),
         TestCase("Many redundant matching parenthesis", 1, "(((((1)))))"),
         TestCase(
