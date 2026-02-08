@@ -82,10 +82,9 @@ class Scope:
             is currently being parsed.
 
         """
-        if self._number_buffer is None:
-            return None
-
-        return int("".join(self._number_buffer))
+        return (
+            int("".join(self._number_buffer)) if self._number_buffer else None
+        )
 
     def add_integer(self, test_char: str, /) -> bool:
         """Concatenate integer to the currently parsed number.
@@ -163,9 +162,10 @@ def evaluate(expression: str, /) -> int | None:
     scope_stacks.push(Scope(0, operator="+"))
 
     # Iterate chars and parse them, if they are invalid return None.
-    for test_char in expression:
-        if not _process_char(test_char, scope_stacks):
-            return None
+    if not all(
+        _process_char(test_char, scope_stacks) for test_char in expression
+    ):
+        return None
 
     expected_stacks: t.Final = 1
     if len(scope_stacks) != expected_stacks:
