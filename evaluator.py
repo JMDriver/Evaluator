@@ -423,7 +423,13 @@ if __name__ == "__main__":
         TestCase("Unsigned number pre-operator", None, "-1*2"),
         TestCase("Unsigned number post-operator", None, "1*-2"),
         TestCase("Unsigned parenthesis", None, "-(1*2)"),
-        TestCase("Unsigned number in parenthesis", None, "(-1*2)"),
+        TestCase("Unsigned number in parenthesis", None, "(-1)"),
+        TestCase(
+            "Unsigned number in parenthesis pre-operator", None, "(-1*2)",
+        ),
+        TestCase(
+            "Unsigned number in parenthesis post-operator", None, "(1*-2)",
+        ),
         # isnumeric() would allow this, we should not.
         TestCase("Global numeric characters", None, "五-五"),
         TestCase("Invalid character in expression", None, "2,"),
