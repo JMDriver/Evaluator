@@ -71,7 +71,7 @@ class Scope:
     accumulated_value: int
     operator: Operator | None = None
 
-    _number_buffer: list[str] | None = None
+    _number_buffer: int | None = None
 
     @property
     def pending_number(self) -> int | None:
@@ -82,9 +82,7 @@ class Scope:
             is currently being parsed.
 
         """
-        return (
-            int("".join(self._number_buffer)) if self._number_buffer else None
-        )
+        return self._number_buffer
 
     def add_integer(self, test_char: str, /) -> bool:
         """Concatenate integer to the currently parsed number.
@@ -99,8 +97,11 @@ class Scope:
             # If the character is not valid, early exit.
             return False
 
-        self._number_buffer = self._number_buffer or []
-        self._number_buffer.append(test_char)
+        if not self._number_buffer:
+            self._number_buffer = int(test_char)
+            return True
+
+        self._number_buffer = (self._number_buffer) * 10 + int(test_char)
         return True
 
     def clear_integer(self) -> None:
