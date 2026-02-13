@@ -299,10 +299,10 @@ def _process_char(
     if test_char == "(":
         # A new scope is being entered, and the first number should be
         # added to 0.
-        # If the current operation is prefixed by unary minus, this scope should
-        # be made negative.
+        # If the current operation is negative, this scope should be made
+        # negative.
         scopes.push(
-            Scope(0, operator="+", unary_minus=current_scope.unary_minus)
+            Scope(0, operator="+", unary_minus=current_scope.unary_minus),
         )
         current_scope.unary_minus = False
         return True
@@ -442,7 +442,7 @@ if __name__ == "__main__":
         ),
         TestCase("Deeply nested negative number", 0, "(1+1) * (1+(1+-2))"),
         TestCase(
-            "Deeply nested negative parenthesis", 4, "(1+1) * (1-(1+-2))"
+            "Deeply nested negative parenthesis", 4, "(1+1) * (1-(1+-2))",
         ),
         # ----------- Implicit multiplication ---------------------------
         TestCase("Implicit multiplication", 6, "1(2*3)"),
