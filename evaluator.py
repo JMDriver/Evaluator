@@ -440,9 +440,19 @@ if __name__ == "__main__":
             -2,
             "(1*-2)",
         ),
+        TestCase("Consequtive unary minus operators", 1, "--1"),
+        TestCase("Consequtive unary add operators", 1, "++1"),
+        TestCase(
+            "Consequtive mixed unary operators (negative)",
+            -1,
+            "-+--+1",
+        ),
+        TestCase("Consequtive mixed unary operators (positive)", 1, "-++-+1"),
         TestCase("Deeply nested negative number", 0, "(1+1) * (1+(1+-2))"),
         TestCase(
-            "Deeply nested negative parenthesis", 4, "(1+1) * (1-(1+-2))",
+            "Deeply nested negative parenthesis",
+            4,
+            "(1+1) * (1-(1+-2))",
         ),
         # ----------- Implicit multiplication ---------------------------
         TestCase("Implicit multiplication", 6, "1(2*3)"),
