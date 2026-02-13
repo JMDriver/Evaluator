@@ -283,13 +283,13 @@ def _process_char(
     # Determine if the test_char is an operator.
     if is_operator(test_char):
         if current_scope.operator is not None:
-            # We can have multiple unary operators. Unary minus should make the
-            # flip the sign of the current operation.
+            # We can have multiple unary operators. Unary minus should flip
+            # the sign of the current operation.
             if test_char == "-":
                 current_scope.unary_minus = not current_scope.unary_minus
                 return True
 
-            # return True if we have a unitary operator, else consequtive
+            # return True if we have a unary operator, else consecutive
             # operators are invalid (1**1)
             return test_char == "+"
 
@@ -441,14 +441,14 @@ if __name__ == "__main__":
             -2,
             "(1*-2)",
         ),
-        TestCase("Consequtive unary minus operators", 1, "--1"),
-        TestCase("Consequtive unary add operators", 1, "++1"),
+        TestCase("Consecutive unary minus operators", 1, "--1"),
+        TestCase("Consecutive unary add operators", 1, "++1"),
         TestCase(
-            "Consequtive mixed unary operators (negative)",
+            "Consecutive mixed unary operators (negative)",
             -1,
             "-+--+1",
         ),
-        TestCase("Consequtive mixed unary operators (positive)", 1, "-++-+1"),
+        TestCase("Consecutive mixed unary operators (positive)", 1, "-++-+1"),
         TestCase("Deeply nested negative number", 0, "(1+1) * (1+(1+-2))"),
         TestCase(
             "Deeply nested negative parenthesis",
