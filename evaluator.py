@@ -62,6 +62,7 @@ class Scope:
     Args:
         accumulated_value: The accumulated value of this scope.
         operator: The current pending operator in this scope.
+        unary_minus: The current sign of the operation. True, if negative.
 
     Attributes:
         pending_number: The current number being parsed.
