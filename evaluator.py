@@ -62,6 +62,7 @@ class Scope:
     Args:
         accumulated_value: The accumulated value of this scope.
         operator: The current pending operator in this scope.
+        unary_minus: The current sign of the operation. True, if negative.
 
     Attributes:
         pending_number: The current number being parsed.
@@ -70,6 +71,7 @@ class Scope:
 
     accumulated_value: int
     operator: Operator | None = None
+    unary_minus: bool = False
 
     _number_buffer: int | None = None
 
@@ -82,7 +84,14 @@ class Scope:
             is currently being parsed.
 
         """
-        return self._number_buffer
+        if self._number_buffer is None:
+            return None
+
+        return (
+            -1 * self._number_buffer
+            if self.unary_minus
+            else self._number_buffer
+        )
 
     def add_integer(self, test_char: str, /) -> bool:
         """Concatenate integer to the currently parsed number.
@@ -107,6 +116,7 @@ class Scope:
     def clear_integer(self) -> None:
         """Clear all pending integers."""
         self._number_buffer = None
+        self.unary_minus = False
 
 
 T = t.TypeVar("T")
@@ -204,11 +214,8 @@ def _close_scope(scope_stacks: Stack[Scope]) -> bool:
 
     parent_scope = scope_stacks.back()
     if not parent_scope.operator:
-        # If the parent has no operator then we have an invalid
-        # expression. e.g: 1(2+2)
-        # This should be implicit multiplication but it does not
-        # seem to fit the task.
-        return False
+        # If the parent scope has no operator we can do implicit multiplication
+        parent_scope.operator = "*"
 
     if (
         result := operator_map[parent_scope.operator](
@@ -219,7 +226,12 @@ def _close_scope(scope_stacks: Stack[Scope]) -> bool:
         # Invalid operation. e.g., division by 0.
         return False
 
-    parent_scope.accumulated_value = result
+    # If the parent has a pending unary minus, we should make this result
+    # negative.
+    parent_scope.accumulated_value = result * (
+        -1 if parent_scope.unary_minus else 1
+    )
+    parent_scope.unary_minus = False
     parent_scope.operator = None
     return True
 
@@ -276,8 +288,16 @@ def _process_char(
     # Determine if the test_char is an operator.
     if is_operator(test_char):
         if current_scope.operator is not None:
-            # Two consecutive operators (1++1) is invalid.
-            return False
+            # We can have multiple unary operators. Unary minus should flip
+            # the sign of the current operation.
+            if test_char == "-":
+                current_scope.unary_minus = not current_scope.unary_minus
+                return True
+
+            # return True if we have a unary operator, else consecutive
+            # operators are invalid (1**1)
+            return test_char == "+"
+
         # Set the scopes pending operator.
         current_scope.operator = test_char
         return True
@@ -285,7 +305,9 @@ def _process_char(
     if test_char == "(":
         # A new scope is being entered, and the first number should be
         # added to 0.
-        scopes.push(Scope(0, operator="+"))
+        scopes.push(
+            Scope(0, operator="+"),
+        )
         return True
 
     if test_char == ")":
@@ -405,6 +427,52 @@ if __name__ == "__main__":
         TestCase("Leading 0 addition", 1, "0001+0000"),
         TestCase("0 in parenthesis", 0, "(0)"),
         TestCase("Leading 0 in parenthesis", 0, "(0000)"),
+        # ----------- Unary ---------------------------------------------
+        TestCase("Negative numbers", -1, "-1"),
+        TestCase("Negative number pre-operator", -2, "-1*2"),
+        TestCase("Negative number post-operator", -2, "1*-2"),
+        TestCase("Negative parenthesis", -2, "-(1*2)"),
+        TestCase(
+            "Negative parenthesis with multiple operators", -6, "-(1*2+1*2)",
+        ),
+        TestCase(
+            (
+                "Negative parenthesis with multiple operators followed by "
+                "an operator"
+            ),
+            0,
+            "-(1*2+1*2)+6",
+        ),
+        TestCase("Negative number in parenthesis", -1, "(-1)"),
+        TestCase(
+            "Negative number in parenthesis pre-operator",
+            -2,
+            "(-1*2)",
+        ),
+        TestCase(
+            "Negative number in parenthesis post-operator",
+            -2,
+            "(1*-2)",
+        ),
+        TestCase("Consecutive unary minus operators", 1, "--1"),
+        TestCase("Consecutive unary add operators", 1, "++1"),
+        TestCase(
+            "Consecutive mixed unary operators (negative)",
+            -1,
+            "-+--+1",
+        ),
+        TestCase("Consecutive mixed unary operators (positive)", 1, "-++-+1"),
+        TestCase("Deeply nested negative number", 0, "(1+1) * (1+(1+-2))"),
+        TestCase(
+            "Deeply nested negative parenthesis",
+            4,
+            "(1+1) * (1-(1+-2))",
+        ),
+        # ----------- Implicit multiplication ---------------------------
+        TestCase("Implicit multiplication", 6, "1(2*3)"),
+        TestCase("Parenthesis Implicit multiplication", 36, "(2*3)(2*3)"),
+        TestCase("Implicit multiplication of operator", None, "*(2*3)"),
+        TestCase("Implicit multiplication of unary", -6, "-(2*3)"),
         # ----------- Division by 0 -------------------------------------
         TestCase("Division by 0", None, "1/0"),
         TestCase("Zero divided by 0", None, "0/0"),
@@ -421,21 +489,6 @@ if __name__ == "__main__":
         ),
         # ----------- Invalid characters --------------------------------
         TestCase("Invalid operator", None, "1=2"),
-        TestCase("Unsigned numbers", None, "-1"),
-        TestCase("Unsigned number pre-operator", None, "-1*2"),
-        TestCase("Unsigned number post-operator", None, "1*-2"),
-        TestCase("Unsigned parenthesis", None, "-(1*2)"),
-        TestCase("Unsigned number in parenthesis", None, "(-1)"),
-        TestCase(
-            "Unsigned number in parenthesis pre-operator",
-            None,
-            "(-1*2)",
-        ),
-        TestCase(
-            "Unsigned number in parenthesis post-operator",
-            None,
-            "(1*-2)",
-        ),
         # isnumeric() would allow this, we should not.
         TestCase("Global numeric characters", None, "五-五"),
         TestCase("Invalid character in expression", None, "2,"),
@@ -455,23 +508,20 @@ if __name__ == "__main__":
         TestCase("Nested empty expression", None, "()"),
         TestCase("Nested empty expression with whitespace", None, " ( ) "),
         # ----------- Invalid Operator --------------------------------
-        TestCase("Expression starts with an operator", None, "+1"),
+        TestCase("Expression starts with an operator", None, "*1"),
         TestCase("Single operator only", None, "+"),
         TestCase("Missing Operator", None, "1 1"),
         TestCase("Nested Missing Operator", None, "(1 1)"),
-        TestCase("Expression ends with an operator", None, "1+"),
-        TestCase("Parenthesis starts with an operator", None, "(+1)"),
-        TestCase("Parenthesis ends with an operator", None, "(1+)"),
-        TestCase("Multiple concurrent operators", None, "1++1"),
+        TestCase("Expression ends with an operator", None, "1*"),
+        TestCase("Parenthesis starts with an operator", None, "(*1)"),
+        TestCase("Parenthesis ends with an operator", None, "(1*)"),
+        TestCase("Multiple concurrent operators", None, "1**1"),
         TestCase(
             "Multiple concurrent operators with whitespace",
             None,
-            "1 + + 1",
+            "1 * * 1",
         ),
         # ----------- Invalid Parenthesis --------------------------------
-        # Technically correct - implicit multiplication, but not supported.
-        TestCase("Implicit multiplication", None, "1(2*3)"),
-        TestCase("Parenthesis Implicit multiplication", None, "(2*3)(2*3)"),
         TestCase("Invalid Implicit multiplication", None, "(2*3)4"),
         TestCase("Unclosed root parenthesis start", None, "(4"),
         TestCase("Unclosed root parenthesis end", None, "4)"),
