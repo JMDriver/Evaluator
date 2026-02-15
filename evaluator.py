@@ -509,7 +509,6 @@ if __name__ == "__main__":
             "1 * * 1",
         ),
         # ----------- Invalid Parenthesis --------------------------------
-        # Technically correct - implicit multiplication, but not supported.
         TestCase("Invalid Implicit multiplication", None, "(2*3)4"),
         TestCase("Unclosed root parenthesis start", None, "(4"),
         TestCase("Unclosed root parenthesis end", None, "4)"),
